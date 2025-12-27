@@ -1,9 +1,9 @@
 # SPDX-FileCopyrightText: 2024 Nextcloud GmbH and Nextcloud contributors
 # SPDX-License-Identifier: AGPL-3.0-or-later
 version = 1
-SPDX-PackageName = "ldap_write_support"
+SPDX-PackageName = "ldap_user_write_support"
 SPDX-PackageSupplier = "Nextcloud <info@nextcloud.com>"
-SPDX-PackageDownloadLocation = "https://github.com/nextcloud/ldap_write_support"
+SPDX-PackageDownloadLocation = "https://github.com/nextcloud/ldap_user_write_support"
 
 [[annotations]]
 path = ["l10n/**.js", "l10n/**.json"]

@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "ldap_write_support",
+    "ldap_user_write_support",
     {
     "Could not find related LDAP entry" : "Haikuweza kupata ingizo la LDAP linalohusiana",
     "DisplayName change rejected" : "Badiliko la DisplayName limekataliwa",

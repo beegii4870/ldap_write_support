@@ -12,11 +12,10 @@ import AdminSettings from './components/AdminSettings.vue'
 import 'vite/modulepreload-polyfill'
 
 const View = Vue.extend(AdminSettings)
-const AppID = 'ldap_write_support'
+const AppID = 'ldap_user_write_support'
 
 new View({
 	propsData: {
-		templates: loadState(AppID, 'templates'),
 		switches: loadState(AppID, 'switches'),
 	},
-}).$mount('#ldap-write-support-admin-settings')
+}).$mount('#ldap-user-write-support-admin-settings')

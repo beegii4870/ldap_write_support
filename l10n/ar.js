@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "ldap_write_support",
+    "ldap_user_write_support",
     {
     "Could not find related LDAP entry" : "تعذّر إيجاد مدخل LDAP المطلوب",
     "DisplayName change rejected" : "تمّ رفض تغيير اسم العرض",

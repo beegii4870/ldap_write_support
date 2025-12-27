@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "ldap_write_support",
+    "ldap_user_write_support",
     {
     "Could not find related LDAP entry" : "Nepodarilo sa nájisť súvisiaci záznam LDAP",
     "DisplayName change rejected" : "Zmena DisplayName bola odmietnutá",

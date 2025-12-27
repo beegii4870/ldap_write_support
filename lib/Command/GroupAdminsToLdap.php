@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\LdapWriteSupport\Command;
+namespace OCA\LdapUserWriteSupport\Command;
 
 use Exception;
 use OC\SubAdmin;
@@ -20,7 +20,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class GroupAdminsToLdap extends Command {
 	/**
-	 * This adds/removes group subadmins as ldap group owners
+	 * This adds/removes group subadmins as LDAP group owners.
 	 */
 	private $simulate = false;
 	private $verbose = false;
@@ -35,7 +35,12 @@ class GroupAdminsToLdap extends Command {
 	private $groupProxy;
 
 	/**
-	 * GroupAdminsToLdap constructor.
+	 * Build the group admin synchronization command.
+	 *
+	 * @param SubAdmin $subAdmin Sub admin manager.
+	 * @param IConfig $ocConfig Core configuration for lookup.
+	 * @param Helper $helper LDAP helper for configuration prefixes.
+	 * @param Group_Proxy $groupProxy LDAP group proxy backend.
 	 */
 	public function __construct(
 		SubAdmin $subAdmin,
@@ -51,6 +56,9 @@ class GroupAdminsToLdap extends Command {
 		$this->groupProxy = $groupProxy;
 	}
 
+	/**
+	 * Configure the CLI command options.
+	 */
 	protected function configure() {
 		$this
 			->setName('ldap-ext:sync-group-admins')
@@ -70,6 +78,13 @@ class GroupAdminsToLdap extends Command {
 		;
 	}
 
+	/**
+	 * Execute the group admin synchronization to LDAP.
+	 *
+	 * @param InputInterface $input Command input.
+	 * @param OutputInterface $output Command output.
+	 * @return int Exit code.
+	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		if ($input->getOption('sim')) {
 			$this->simulate = true;
@@ -123,6 +138,13 @@ class GroupAdminsToLdap extends Command {
 				}
 			}
 
+			/**
+			 * Diff two LDAP owner maps keyed by group ID.
+			 *
+			 * @param array $array1 LDAP admin list.
+			 * @param array $array2 LDAP admin list.
+			 * @return array
+			 */
 			function diff_user_arrays($array1, $array2) {
 				$difference = [];
 				foreach ($array1 as $gid => $users) {
