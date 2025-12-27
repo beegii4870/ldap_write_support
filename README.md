@@ -9,8 +9,6 @@
 
 Update LDAP user attributes from within Nextcloud.
 
-![](img/screenshots/settings.png)
-
 * 📛 **Update details:** display name, email address and avatars
 * 🔐 **Passwords:** update LDAP passwords when permitted
 * ⚙️ **Integrated**: works in the known Nextcloud users page
