@@ -5,5 +5,5 @@ declare(strict_types=1);
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 ?>
-<div id="ldap-write-support-admin-settings">
+<div id="ldap-user-write-support-admin-settings">
 </div>

@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "ldap_write_support",
+    "ldap_user_write_support",
     {
     "Writing" : "Idazten",
     "Switches" : "Etengailuak",

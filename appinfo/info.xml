@@ -6,36 +6,34 @@
 -->
 <info xmlns:xsi= "http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-    <id>ldap_write_support</id>
-    <name>Write support for LDAP</name>
-    <summary>Adds support for creating, manipulating and deleting users and groups on LDAP via Nextcloud</summary>
-    <description><![CDATA[The write support for LDAP enriches the LDAP backend with capabilities to manage the directory from Nextcloud.
-* create, edit and delete users
-* create, modify memberships and delete groups
-* prevent fallback to the local database backend (optional)
-* auto generate a user ID (optional)
-* and more behavioral switches
+    <id>ldap_user_write_support</id>
+    <name>LDAP user write support</name>
+    <summary>Adds support for updating LDAP user attributes and memberships via Nextcloud</summary>
+    <description><![CDATA[LDAP user write support enriches the LDAP backend with capabilities to update directory data from Nextcloud.
+* update display names, avatars, emails, and passwords
+* modify group memberships and delete groups
+* configurable behavioral switches for write permissions
     ]]></description>
     <version>1.15.0-dev.0</version>
     <licence>agpl</licence>
     <author mail="alan@eita.org.br" homepage="http://eita.org.br">Alan Freihof Tygel</author>
     <author mail="blizzz@arthur-schiwon.de" homepage="https://arthur-schiwon.de">Arthur Schiwon</author>
-    <namespace>LdapWriteSupport</namespace>
+    <namespace>LdapUserWriteSupport</namespace>
     <category>integration</category>
     <category>organization</category>
     <category>tools</category>
-    <bugs>https://github.com/nextcloud/ldap_write_support/issues</bugs>
-    <repository>https://github.com/nextcloud/ldap_write_support</repository>
-    <screenshot>https://raw.githubusercontent.com/nextcloud/ldap_write_support/master/img/screenshots/settings.png</screenshot>
-    <screenshot>https://raw.githubusercontent.com/nextcloud/ldap_write_support/master/img/screenshots/users.png</screenshot>
+    <bugs>https://github.com/nextcloud/ldap_user_write_support/issues</bugs>
+    <repository>https://github.com/nextcloud/ldap_user_write_support</repository>
+    <screenshot>https://raw.githubusercontent.com/nextcloud/ldap_user_write_support/master/img/screenshots/settings.png</screenshot>
+    <screenshot>https://raw.githubusercontent.com/nextcloud/ldap_user_write_support/master/img/screenshots/users.png</screenshot>
     <dependencies>
         <lib>ldap</lib>
         <nextcloud min-version="33" max-version="33"/>
     </dependencies>
     <commands>
-        <command>OCA\LdapWriteSupport\Command\GroupAdminsToLdap</command>
+        <command>OCA\LdapUserWriteSupport\Command\GroupAdminsToLdap</command>
     </commands>
     <settings>
-        <admin>OCA\LdapWriteSupport\Settings\Admin</admin>
+        <admin>OCA\LdapUserWriteSupport\Settings\Admin</admin>
     </settings>
 </info>

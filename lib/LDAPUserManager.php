@@ -6,15 +6,15 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-namespace OCA\LdapWriteSupport;
+namespace OCA\LdapUserWriteSupport;
 
 use Exception;
 use LDAP\Connection;
 use OC\ServerNotAvailableException;
 use OC\User\Backend;
 use OC_User;
-use OCA\LdapWriteSupport\AppInfo\Application;
-use OCA\LdapWriteSupport\Service\Configuration;
+use OCA\LdapUserWriteSupport\AppInfo\Application;
+use OCA\LdapUserWriteSupport\Service\Configuration;
 use OCA\User_LDAP\Exceptions\ConstraintViolationException;
 use OCA\User_LDAP\ILDAPUserPlugin;
 use OCA\User_LDAP\IUserLDAP;
@@ -23,7 +23,6 @@ use OCP\IImage;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
-use OCP\IUserSession;
 use OCP\LDAP\IDeletionFlagSupport;
 use OCP\LDAP\ILDAPProvider;
 use Psr\Log\LoggerInterface;
@@ -32,17 +31,23 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	/** @var ILDAPProvider */
 	private $ldapProvider;
 
-	/** @var IUserSession */
-	private $userSession;
-
 	/** @var IUserManager */
 	private $userManager;
 	/** @var IL10N */
 	private $l10n;
 
+	/**
+	 * Build the LDAP user manager plugin.
+	 *
+	 * @param IUserManager $userManager User manager to register hooks with.
+	 * @param LDAPConnect $ldapConnect LDAP connection helper.
+	 * @param ILDAPProvider $LDAPProvider LDAP provider from the core backend.
+	 * @param Configuration $configuration App configuration for permissions.
+	 * @param IL10N $l10n Localization service.
+	 * @param LoggerInterface $logger Logger for LDAP operations.
+	 */
 	public function __construct(
 		IUserManager $userManager,
-		IUserSession $userSession,
 		private LDAPConnect $ldapConnect,
 		ILDAPProvider $LDAPProvider,
 		private Configuration $configuration,
@@ -50,7 +55,6 @@ class LDAPUserManager implements ILDAPUserPlugin {
 		private LoggerInterface $logger,
 	) {
 		$this->userManager = $userManager;
-		$this->userSession = $userSession;
 		$this->ldapProvider = $LDAPProvider;
 		$this->l10n = $l10n;
 
@@ -59,10 +63,9 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * Returns the supported actions as int to be
-	 * compared with OC_USER_BACKEND_CREATE_USER etc.
+	 * Returns the supported actions for the LDAP user plugin.
 	 *
-	 * @return int bitwise-or'ed actions
+	 * @return int Bitwise-or'ed actions supported by this backend.
 	 */
 	public function respondToActions() {
 		$setPassword = $this->canSetPassword() && !$this->ldapConnect->hasPasswordPolicy()
@@ -71,11 +74,11 @@ class LDAPUserManager implements ILDAPUserPlugin {
 
 		return Backend::SET_DISPLAYNAME |
 			Backend::PROVIDE_AVATAR |
-			Backend::CREATE_USER |
 			$setPassword;
 	}
 
 	/**
+	 * Update the LDAP display name for a user.
 	 *
 	 * @param string $uid user ID of the user
 	 * @param string $displayName new user's display name
@@ -100,7 +103,7 @@ class LDAPUserManager implements ILDAPUserPlugin {
 		}
 
 		if (!is_resource($connection) && !is_object($connection)) {
-			$this->logger->debug('LDAP resource not available', ['app' => 'ldap_write_support']);
+			$this->logger->debug('LDAP resource not available', ['app' => Application::APP_ID]);
 			throw new ServerNotAvailableException('LDAP server is not available');
 		}
 		try {
@@ -118,7 +121,7 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * checks whether the user is allowed to change his avatar in Nextcloud
+	 * Check whether a user can update their LDAP avatar through Nextcloud.
 	 *
 	 * @param string $uid the Nextcloud user name
 	 * @return bool either the user can or cannot
@@ -128,7 +131,7 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * Saves NC user avatar to LDAP
+	 * Save a Nextcloud avatar into LDAP.
 	 *
 	 * @param IUser $user
 	 */
@@ -150,7 +153,7 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * Saves NC user email to LDAP
+	 * Save a Nextcloud email address into LDAP.
 	 *
 	 * @param IUser $user
 	 * @throws Exception
@@ -168,120 +171,27 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * Create a new user in LDAP Backend
+	 * Create a new LDAP user (disabled in this app).
 	 *
-	 * @param string $uid The username of the user to create
-	 * @param string $password The password of the new user
-	 * @return bool|string the created user of false
-	 * @throws Exception
+	 * @param string $uid The username of the user to create.
+	 * @param string $password The password of the new user.
+	 * @return bool Always false to indicate creation is disabled.
 	 */
-	public function createUser($uid, $password) {
-		$adminUser = $this->userSession->getUser();
-		$requireActorFromLDAP = $this->configuration->isLdapActorRequired();
-		if ($requireActorFromLDAP && !$adminUser instanceof IUser) {
-			throw new Exception('Acting user is not from LDAP');
-		}
-		try {
-			// $adminUser can be null, for example when using the registration app,
-			// throw an Exception to fallback on using the global LDAP connection.
-			if ($adminUser === null) {
-				throw new Exception('No admin user available');
-			}
-			$connection = $this->ldapProvider->getLDAPConnection($adminUser->getUID());
-			// TODO: what about multiple bases?
-			$base = $this->ldapProvider->getLDAPBaseUsers($adminUser->getUID());
-			$displayNameAttribute = $this->ldapProvider->getLDAPDisplayNameField($adminUser->getUID());
-		} catch (Exception $e) {
-			if ($requireActorFromLDAP) {
-				if ($this->configuration->isPreventFallback()) {
-					throw new \Exception('Acting admin is not from LDAP', 0, $e);
-				}
-				return false;
-			}
-			$connection = $this->ldapConnect->getLDAPConnection();
-			$base = $this->ldapConnect->getLDAPBaseUsers()[0];
-			$displayNameAttribute = $this->ldapConnect->getDisplayNameAttribute();
-		}
+	public function createUser($uid, $password): bool {
+		$this->logger->notice(
+			'LDAP user creation is disabled for {uid}',
+			[
+				'app' => Application::APP_ID,
+				'uid' => $uid,
+			]
+		);
 
-		if ($connection === false) {
-			throw new \Exception('Could not bind to LDAP server');
-		}
-
-		[$newUserDN, $newUserEntry] = $this->buildNewEntry($uid, $password, $base);
-
-		$newUserDN = $this->ldapProvider->sanitizeDN([$newUserDN])[0];
-		$this->ensureAttribute($newUserEntry, $displayNameAttribute, $uid);
-
-		$ret = ldap_add($connection, $newUserDN, $newUserEntry);
-
-		$message = 'Create LDAP user \'{username}\' ({dn})';
-		$logMethod = 'info';
-		if ($ret === false) {
-			$message = 'Unable to create LDAP user \'{username}\' ({dn})';
-			$logMethod = 'error';
-		}
-		$this->logger->$logMethod($message, [
-			'app' => Application::APP_ID,
-			'username' => $uid,
-			'dn' => $newUserDN,
-		]);
-
-		if (!$ret && $this->configuration->isPreventFallback()) {
-			throw new \Exception('Cannot create user: ' . ldap_error($connection), ldap_errno($connection));
-		}
-
-		if ($this->respondToActions() & Backend::SET_PASSWORD) {
-			$this->handleSetPassword($newUserDN, $password, $connection);
-		}
-		return $ret ? $newUserDN : false;
-	}
-
-	public function ensureAttribute(array &$ldif, string $attribute, string $fallbackValue): void {
-		$lowerCasedLDIF = array_change_key_case($ldif, CASE_LOWER);
-		if (!isset($lowerCasedLDIF[strtolower($attribute)])) {
-			$ldif[$attribute] = $fallbackValue;
-		}
-	}
-
-	public function buildNewEntry($username, $password, $base): array {
-		// Make sure the parameters don't fool the following algorithm
-		if (str_contains($username, PHP_EOL)) {
-			throw new Exception('Username contains a new line');
-		}
-		if (str_contains($password, PHP_EOL)) {
-			throw new Exception('Password contains a new line');
-		}
-		if (str_contains($base, PHP_EOL)) {
-			throw new Exception('Base DN contains a new line');
-		}
-
-		$ldif = $this->configuration->getUserTemplate();
-
-		$ldif = str_replace('{UID}', $username, $ldif);
-		$ldif = str_replace('{PWD}', $password, $ldif);
-		$ldif = str_replace('{BASE}', $base, $ldif);
-
-		$entry = [];
-		$lines = explode(PHP_EOL, $ldif);
-		foreach ($lines as $line) {
-			$split = explode(':', $line, 2);
-			$key = trim($split[0]);
-			$value = trim($split[1]);
-			if (!isset($entry[$key])) {
-				$entry[$key] = $value;
-			} elseif (is_array($entry[$key])) {
-				$entry[$key][] = $value;
-			} else {
-				$entry[$key] = [$entry[$key], $value];
-			}
-		}
-		$dn = $entry['dn'];
-		unset($entry['dn']);
-
-		return [$dn, $entry];
+		return false;
 	}
 
 	/**
+	 * Delete a user from LDAP if the backend supports deletion.
+	 *
 	 * @param $uid
 	 * @return bool
 	 */
@@ -318,7 +228,7 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * checks whether the user is allowed to change their password in Nextcloud
+	 * Check whether a user can change their password via Nextcloud.
 	 *
 	 * @return bool either the user can or cannot
 	 */
@@ -327,7 +237,7 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * Set password
+	 * Change a user's password in LDAP.
 	 *
 	 * @param string $uid The username
 	 * @param string $password The new password
@@ -343,7 +253,7 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * get the user's home directory
+	 * Get the user's home directory (not implemented).
 	 *
 	 * @param string $uid the username
 	 * @return bool
@@ -354,7 +264,7 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * get display name of the user
+	 * Get display name of the user (not implemented).
 	 *
 	 * @param string $uid user ID of the user
 	 * @return string display name
@@ -365,7 +275,7 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * Count the number of users
+	 * Count the number of users (not implemented).
 	 *
 	 * @return int|bool
 	 */
@@ -374,6 +284,9 @@ class LDAPUserManager implements ILDAPUserPlugin {
 		return false;
 	}
 
+	/**
+	 * Reorder the user backends to ensure LDAP comes first.
+	 */
 	public function makeLdapBackendFirst(): void {
 		$backends = $this->userManager->getBackends();
 		$otherBackends = [];
@@ -393,6 +306,8 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
+	 * Handle user change events coming from Nextcloud.
+	 *
 	 * @throws Exception
 	 */
 	public function changeUserHook(IUser $user, string $feature, $attr1, $attr2): void {
@@ -407,12 +322,17 @@ class LDAPUserManager implements ILDAPUserPlugin {
 		}
 	}
 
+	/**
+	 * Resolve the LDAP distinguished name for a user ID.
+	 *
+	 * @param string $uid User ID to resolve.
+	 */
 	private function getUserDN($uid): string {
 		return $this->ldapProvider->getUserDN($uid);
 	}
 
 	/**
-	 * Handle setting user password password
+	 * Handle setting a user's password, using exop when available.
 	 *
 	 * @param string $userDN The username
 	 * @param string $password The new password

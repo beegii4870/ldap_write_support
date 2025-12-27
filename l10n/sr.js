@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "ldap_write_support",
+    "ldap_user_write_support",
     {
     "Could not find related LDAP entry" : "Не може да се пронађе одговарајућа LDAP ставка",
     "DisplayName change rejected" : "Одбијена је измена имена за приказ",
