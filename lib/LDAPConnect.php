@@ -6,11 +6,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\LdapWriteSupport;
+namespace OCA\LdapUserWriteSupport;
 
 use LDAP\Connection;
 use OC\ServerNotAvailableException;
-use OCA\LdapWriteSupport\AppInfo\Application;
+use OCA\LdapUserWriteSupport\AppInfo\Application;
 use OCA\User_LDAP\Configuration;
 use OCA\User_LDAP\Helper;
 use Psr\Log\LoggerInterface;
@@ -21,6 +21,12 @@ class LDAPConnect {
 	/** @var bool|null */
 	private $passwdSupport;
 
+	/**
+	 * Create the LDAP connection helper.
+	 *
+	 * @param Helper $ldapBackendHelper LDAP backend helper to load configuration.
+	 * @param LoggerInterface $logger Logger for connection events.
+	 */
 	public function __construct(
 		Helper $ldapBackendHelper,
 		private LoggerInterface $logger,
@@ -32,6 +38,8 @@ class LDAPConnect {
 	}
 
 	/**
+	 * Connect to the LDAP host using configured host and port.
+	 *
 	 * @return resource|Connection
 	 * @throws ServerNotAvailableException
 	 */
@@ -72,6 +80,8 @@ class LDAPConnect {
 	}
 
 	/**
+	 * Bind to LDAP using agent credentials.
+	 *
 	 * @return false|resource|Connection
 	 * @throws ServerNotAvailableException
 	 */
@@ -95,6 +105,8 @@ class LDAPConnect {
 	}
 
 	/**
+	 * Fetch a bound LDAP connection.
+	 *
 	 * @return false|resource|Connection
 	 * @throws ServerNotAvailableException
 	 */
@@ -102,6 +114,11 @@ class LDAPConnect {
 		return $this->bind();
 	}
 
+	/**
+	 * Get the configured LDAP bases for users.
+	 *
+	 * @return array
+	 */
 	public function getLDAPBaseUsers(): array {
 		$bases = $this->ldapConfig->ldapBaseUsers;
 		if (empty($bases)) {
@@ -110,6 +127,11 @@ class LDAPConnect {
 		return $bases;
 	}
 
+	/**
+	 * Get the configured LDAP bases for groups.
+	 *
+	 * @return array
+	 */
 	public function getLDAPBaseGroups(): array {
 		$bases = $this->ldapConfig->ldapBaseGroups;
 		if (empty($bases)) {
@@ -118,10 +140,16 @@ class LDAPConnect {
 		return $bases;
 	}
 
+	/**
+	 * Get the LDAP attribute used for display names.
+	 */
 	public function getDisplayNameAttribute(): string {
 		return $this->ldapConfig->ldapUserDisplayName;
 	}
 
+	/**
+	 * Determine whether group operations are enabled.
+	 */
 	public function groupsEnabled(): bool {
 		$filter = trim((string)$this->ldapConfig->ldapGroupFilter);
 		$gAssoc = trim((string)$this->ldapConfig->ldapGroupMemberAssocAttr);
@@ -129,13 +157,16 @@ class LDAPConnect {
 		return $filter !== '' && $gAssoc !== '';
 	}
 
+	/**
+	 * Check whether an LDAP password policy is configured.
+	 */
 	public function hasPasswordPolicy(): bool {
 		$ppDN = $this->ldapConfig->ldapDefaultPPolicyDN;
 		return !empty($ppDN);
 	}
 
 	/**
-	 * checks whether the LDAP server supports the passwd exop
+	 * Check whether the LDAP server supports the passwd exop.
 	 *
 	 * @param Connection $connection LDAP connection to check
 	 * @return boolean either the user can or cannot

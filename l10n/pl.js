@@ -1,5 +1,5 @@
 OC.L10N.register(
-    "ldap_write_support",
+    "ldap_user_write_support",
     {
     "Could not find related LDAP entry" : "Nie można znaleźć powiązanego wpisu LDAP",
     "DisplayName change rejected" : "Odrzucono zmianę DisplayName",

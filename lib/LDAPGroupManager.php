@@ -6,10 +6,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-namespace OCA\LdapWriteSupport;
+namespace OCA\LdapUserWriteSupport;
 
 use Exception;
-use OCA\LdapWriteSupport\AppInfo\Application;
+use OCA\LdapUserWriteSupport\AppInfo\Application;
 use OCA\User_LDAP\Group_Proxy;
 use OCA\User_LDAP\ILDAPGroupPlugin;
 use OCP\GroupInterface;
@@ -24,6 +24,14 @@ class LDAPGroupManager implements ILDAPGroupPlugin {
 	/** @var IGroupManager */
 	private $groupManager;
 
+	/**
+	 * Build the LDAP group manager plugin.
+	 *
+	 * @param IGroupManager $groupManager Group manager to register backends with.
+	 * @param LDAPConnect $ldapConnect LDAP connection helper.
+	 * @param LoggerInterface $logger Logger for LDAP operations.
+	 * @param ILDAPProvider $LDAPProvider LDAP provider from the core backend.
+	 */
 	public function __construct(
 		IGroupManager $groupManager,
 		private LDAPConnect $ldapConnect,
@@ -39,49 +47,38 @@ class LDAPGroupManager implements ILDAPGroupPlugin {
 	}
 
 	/**
-	 * Returns the supported actions as int to be
-	 * compared with OC_GROUP_BACKEND_CREATE_GROUP etc.
+	 * Return the supported group actions for this backend.
 	 *
-	 * @return int bitwise-or'ed actions
+	 * @return int Bitwise-or'ed actions.
 	 */
 	public function respondToActions() {
 		if (!$this->ldapConnect->groupsEnabled()) {
 			return 0;
 		}
-		return GroupInterface::CREATE_GROUP |
-			GroupInterface::DELETE_GROUP |
+		return GroupInterface::DELETE_GROUP |
 			GroupInterface::ADD_TO_GROUP |
 			GroupInterface::REMOVE_FROM_GROUP;
 	}
 
 	/**
-	 * @param string $gid
-	 * @return string|null
+	 * Create a new LDAP group (disabled for this app).
+	 *
+	 * @param string $gid Group ID to create.
+	 * @return string|null Always null because group creation is disabled.
 	 */
 	public function createGroup($gid) {
-		/**
-		 * FIXME could not create group using LDAPProvider, because its methods rely
-		 * on passing an already inserted [ug]id, which we do not have at this point.
-		 */
-
-		$newGroupEntry = $this->buildNewEntry($gid);
-		$connection = $this->ldapConnect->getLDAPConnection();
-		$newGroupDN = "cn=$gid," . $this->ldapConnect->getLDAPBaseGroups()[0];
-		$newGroupDN = $this->ldapProvider->sanitizeDN([$newGroupDN])[0];
-
-		if ($connection && ($ret = ldap_add($connection, $newGroupDN, $newGroupEntry))) {
-			$message = "Create LDAP group '$gid' ($newGroupDN)";
-			$this->logger->notice($message, ['app' => Application::APP_ID]);
-			return $newGroupDN;
-		} else {
-			$message = "Unable to create LDAP group '$gid' ($newGroupDN)";
-			$this->logger->error($message, ['app' => Application::APP_ID]);
-			return null;
-		}
+		$this->logger->notice(
+			'LDAP group creation is disabled for {gid}',
+			[
+				'app' => Application::APP_ID,
+				'gid' => $gid,
+			]
+		);
+		return null;
 	}
 
 	/**
-	 * delete a group
+	 * Delete a group from LDAP.
 	 *
 	 * @param string $gid gid of the group to delete
 	 * @return bool
@@ -102,7 +99,7 @@ class LDAPGroupManager implements ILDAPGroupPlugin {
 	}
 
 	/**
-	 * Add a LDAP user to a LDAP group
+	 * Add an LDAP user to an LDAP group.
 	 *
 	 * @param string $uid Name of the user to add to group
 	 * @param string $gid Name of the group in which add the user
@@ -142,7 +139,7 @@ class LDAPGroupManager implements ILDAPGroupPlugin {
 	}
 
 	/**
-	 * Removes a LDAP user from a LDAP group
+	 * Remove an LDAP user from an LDAP group.
 	 *
 	 * @param string $uid Name of the user to remove from group
 	 * @param string $gid Name of the group from which remove the user
@@ -181,14 +178,33 @@ class LDAPGroupManager implements ILDAPGroupPlugin {
 	}
 
 
+	/**
+	 * Count users in a group (not implemented).
+	 *
+	 * @param string $gid Group ID.
+	 * @param string $search Optional search string.
+	 * @return bool
+	 */
 	public function countUsersInGroup($gid, $search = '') {
 		return false;
 	}
 
+	/**
+	 * Get details of a group (not implemented).
+	 *
+	 * @param string $gid Group ID.
+	 * @return bool
+	 */
 	public function getGroupDetails($gid) {
 		return false;
 	}
 
+	/**
+	 * Check whether a group is backed by LDAP.
+	 *
+	 * @param string $gid Group ID.
+	 * @return bool
+	 */
 	public function isLDAPGroup($gid): bool {
 		try {
 			return !empty($this->ldapProvider->getGroupDN($gid));
@@ -197,14 +213,9 @@ class LDAPGroupManager implements ILDAPGroupPlugin {
 		}
 	}
 
-	private function buildNewEntry($gid): array {
-		return [
-			'objectClass' => ['groupOfNames', 'top'],
-			'cn' => $gid,
-			'member' => ['']
-		];
-	}
-
+	/**
+	 * Reorder group backends to ensure LDAP comes first.
+	 */
 	public function makeLdapBackendFirst(): void {
 		$backends = $this->groupManager->getBackends();
 		$otherBackends = [];

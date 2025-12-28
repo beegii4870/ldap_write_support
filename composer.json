@@ -1,5 +1,5 @@
 {
-    "name": "nextcloud/ldap_write_support",
+    "name": "nextcloud/ldap_user_write_support",
     "type": "project",
     "require-dev": {
         "nextcloud/ocp": "dev-master",

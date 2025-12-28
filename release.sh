@@ -65,7 +65,7 @@ case $input in
         git push --tags
         # Create release on github
 
-        git push git@github.com:nextcloud-releases/ldap_write_support.git v$version
+        git push git@github.com:nextcloud-releases/ldap_user_write_support.git v$version
         # Create release on github
         ;;
     *)
@@ -74,5 +74,5 @@ case $input in
 esac
 
 # Then manually:
-echo "Create release on github from tag on https://github.com/nextcloud/ldap_write_support/tags"
-echo "Create release on github from tag on https://github.com/nextcloud-releases/ldap_write_support/tags"
+echo "Create release on github from tag on https://github.com/nextcloud/ldap_user_write_support/tags"
+echo "Create release on github from tag on https://github.com/nextcloud-releases/ldap_user_write_support/tags"

@@ -17,7 +17,7 @@ composer dump-autoload
 
 ${ROOT_DIR}/occ status
 ${ROOT_DIR}/occ app:enable user_ldap
-${ROOT_DIR}/occ app:enable ldap_write_support
+${ROOT_DIR}/occ app:enable ldap_user_write_support
 ${ROOT_DIR}/occ app:list
 
 export TEST_SERVER_URL="http://localhost:8080/ocs/"
