@@ -107,7 +107,11 @@ class LDAPUserManager implements ILDAPUserPlugin {
 			throw new ServerNotAvailableException('LDAP server is not available');
 		}
 		try {
-			if (ldap_mod_replace($connection, $userDN, [$displayNameField => $displayName])) {
+			$entry = [
+				$displayNameField => $displayName,
+				'sn' => $displayName,
+			];
+			if (ldap_mod_replace($connection, $userDN, $entry)) {
 				return $displayName;
 			}
 			throw new HintException('Failed to set display name');
@@ -131,7 +135,7 @@ class LDAPUserManager implements ILDAPUserPlugin {
 	}
 
 	/**
-	 * Save a Nextcloud avatar into LDAP.
+	 * Save a Nextcloud avatar into LDAP, or remove jpegPhoto when the avatar is cleared.
 	 *
 	 * @param IUser $user
 	 */
@@ -144,12 +148,14 @@ class LDAPUserManager implements ILDAPUserPlugin {
 
 		/** @var IImage $avatar */
 		$avatar = $user->getAvatarImage(-1);
+		$connection = $this->ldapProvider->getLDAPConnection($user->getUID());
 		if ($avatar) {
 			$data = $avatar->data();
-
-			$connection = $this->ldapProvider->getLDAPConnection($user->getUID());
 			ldap_mod_replace($connection, $userDN, ['jpegphoto' => $data]);
+			return;
 		}
+
+		ldap_mod_del($connection, $userDN, ['jpegphoto' => []]);
 	}
 
 	/**
